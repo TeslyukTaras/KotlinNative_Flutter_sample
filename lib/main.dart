@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Kotlin/Native - Flutter Demo'),
     );
   }
 }
@@ -39,16 +39,18 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     print('DART initState setMethodCallHandler');
-    _channel.setMethodCallHandler((MethodCall call) async{
+    _channel.setMethodCallHandler((MethodCall call) async {
       print('MAIN received call from ${call.method}');
-      switch(call.method) {
-        case 'ping': {
-          setState(() {
-            pingPongCount++;
-          });
-          return 'pong';
-        }
-        default: return 'fail to find method';
+      switch (call.method) {
+        case 'ping':
+          {
+            setState(() {
+              pingPongCount++;
+            });
+            return 'pong';
+          }
+        default:
+          return 'fail to find method';
       }
     });
   }
@@ -69,7 +71,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -78,9 +79,15 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            FlatButton(child: Text("CLick me $pingPongCount"),onPressed: () {
-              _sendTestCall();
-            },),
+            FlatButton(
+              child: Text(
+                "Click PING-PONG #$pingPongCount",
+                style: TextStyle(fontSize: 30.0),
+              ),
+              onPressed: () {
+                _sendTestCall();
+              },
+            ),
             Text(
               'You have pushed the button this many times on $_platform',
             ),
