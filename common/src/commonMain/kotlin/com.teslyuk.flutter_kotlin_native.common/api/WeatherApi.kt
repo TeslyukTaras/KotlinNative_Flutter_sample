@@ -14,7 +14,8 @@ import kotlinx.serialization.json.JSON
 class WeatherApi(val logger: PlatformLogger) {
 
     companion object {
-        private const val baseUrl = "https://samples.openweathermap.org"
+        private const val baseUrl = "https://api.openweathermap.org"
+        private var API_KEY = "fcba71b899a98d97f2ac235f742201d8"
     }
 
     private val client = HttpClient {
@@ -29,7 +30,7 @@ class WeatherApi(val logger: PlatformLogger) {
     suspend fun getWeather(name: String): Weather = client.request<HttpResponse> {
         method = HttpMethod.Get
         url {
-            takeFrom("$baseUrl/data/2.5/weather?q=London,uk&appid=b6907d289e10d714a6e88b30761fae22")
+            takeFrom("$baseUrl/data/2.5/weather?q=${name}&appid=${API_KEY}")
         }
     }.use { response ->
         val json = response.readText()
