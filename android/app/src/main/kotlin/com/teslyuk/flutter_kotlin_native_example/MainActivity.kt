@@ -9,18 +9,23 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.MethodCall
 
+import com.teslyuk.flutter_kotlin_native_example.dependencies
+
 import com.teslyuk.flutter_kotlin_native.common.*
 
 class MainActivity : FlutterActivity() {
 
     lateinit var channel: MethodChannel
-    var commonMediator = CommonMediator()
+
+    lateinit var commonMediator: CommonMediator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         GeneratedPluginRegistrant.registerWith(this)
 
         channel = MethodChannel(flutterView, "/api")
+        val dependencyManager = dependencies(this)
+        commonMediator = CommonMediator(dependencyManager.coroutineContext, dependencyManager.logger)
 
         channel.setMethodCallHandler { methodCall, result ->
             commonMediator.processMethodChannel(methodCall.method ?: "",

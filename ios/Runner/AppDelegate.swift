@@ -5,13 +5,21 @@ import common
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
 
+    public lazy var dependencyManager = {
+        DependencyManager()
+    }()
+
+    static var me: AppDelegate {
+        return UIApplication.shared.delegate as! AppDelegate
+    }
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
     let channel = FlutterMethodChannel.init(name: "/api", binaryMessenger: controller)
-    let commonMediator = CommonMediator()
+    let commonMediator = CommonMediator(coroutineContext: dependencyManager.uiContext, logger: dependencyManager.logger)
     channel.setMethodCallHandler({
         (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
 
@@ -48,4 +56,8 @@ import common
             }
         }
     }
+}
+
+func dependencies() -> DependencyManager {
+    return AppDelegate.me.dependencyManager
 }

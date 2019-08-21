@@ -33,24 +33,22 @@ class _MyHomePageState extends State<MyHomePage> {
   static const CHANNEL_NAME = '/api';
   static const _channel = MethodChannel(CHANNEL_NAME);
   var _platform = "?";
-  var pingPongCount = 0;
+  var pingPongValue = '0';
 
   @override
   void initState() {
     super.initState();
     print('DART initState setMethodCallHandler');
-    _channel.setMethodCallHandler((MethodCall call) async {
+    _channel.setMethodCallHandler((MethodCall call) async{
       print('MAIN received call from ${call.method}');
-      switch (call.method) {
-        case 'ping':
-          {
-            setState(() {
-              pingPongCount++;
-            });
-            return 'pong';
-          }
-        default:
-          return 'fail to find method';
+      switch(call.method) {
+        case 'ping': {
+          setState(() {
+            pingPongValue = '${call.arguments}';
+          });
+          return 'pong';
+        }
+        default: return 'fail to find method';
       }
     });
   }
@@ -81,8 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             FlatButton(
               child: Text(
-                "Click PING-PONG #$pingPongCount",
-                style: TextStyle(fontSize: 30.0),
+                "Click GET WEATHER #$pingPongValue",
+                style: TextStyle(fontSize: 20.0),
               ),
               onPressed: () {
                 _sendTestCall();
