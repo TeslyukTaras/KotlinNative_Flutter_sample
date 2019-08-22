@@ -1,7 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_kotlin_native_example/IWeatherView.dart';
+import 'package:flutter_kotlin_native_example/channel/ChannelHelper.dart';
+
+import 'model/Weather.dart';
+import 'package:flutter_kotlin_native_example/const.dart';
 
 void main() => runApp(MyApp());
 
@@ -11,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.indigo,
       ),
       home: MyHomePage(title: 'Kotlin/Native - Flutter Demo'),
     );
@@ -27,43 +29,60 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MyHomePageState extends State<MyHomePage> implements IWeatherView {
+  ChannelHelper channelHelper = ChannelHelper();
 
-  static const CHANNEL_NAME = '/api';
-  static const _channel = MethodChannel(CHANNEL_NAME);
-  var _platform = "?";
-  var pingPongValue = '0';
+  String cityName = 'Lviv';
+  bool isProgress = false;
+  Weather weather = Weather();
 
   @override
   void initState() {
     super.initState();
-    print('DART initState setMethodCallHandler');
-    _channel.setMethodCallHandler((MethodCall call) async{
-      print('MAIN received call from ${call.method}');
-      switch(call.method) {
-        case 'ping': {
-          setState(() {
-            pingPongValue = '${call.arguments}';
-          });
-          return 'pong';
-        }
-        default: return 'fail to find method';
-      }
+    channelHelper.start(this);
+    channelHelper.getWeather(cityName);
+  }
+
+  @override
+  void hideProgress() {
+    setState(() {
+      isProgress = false;
     });
   }
 
-  void _sendTestCall() async {
-    var callResult = await _channel.invokeMethod('call me');
-    print('DART callResult ${callResult}');
+  @override
+  void showError() {
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Failure"),
+            content: Text("Failed to load weather data"),
+            actions: <Widget>[
+              FlatButton(
+                child: Text("Close"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  hideProgress();
+                },
+              )
+            ],
+          );
+        });
   }
 
-  void _incrementCounter() async {
-    var platform = await _channel.invokeMethod('platformName');
-
+  @override
+  void showProgress() {
     setState(() {
-      _counter++;
-      _platform = platform;
+      isProgress = true;
+    });
+  }
+
+  @override
+  void showWeather(Weather weather) {
+    setState(() {
+      this.weather = weather;
     });
   }
 
@@ -73,34 +92,157 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/background.png'),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+                Colors.white.withOpacity(0.8), BlendMode.dstATop),
+          ),
+        ),
+//        color: Colors.blue,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            FlatButton(
+            getSearchField(),
+            getProgress(),
+            getMainDataContainer(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget getSearchField() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 0.0),
+      child: TextField(
+        onChanged: (text) {
+          cityName = text;
+        },
+        onSubmitted: (text) {
+          channelHelper.getWeather(cityName);
+        },
+        decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            icon: Icon(
+              Icons.location_city,
+              color: Colors.white,
+            ),
+            hintText: 'Enter City Name',
+            hintStyle: TextStyle(color: Colors.grey),
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(10.0))),
+      ),
+    );
+  }
+
+  Widget getProgress() {
+    return Visibility(
+      visible: isProgress,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              backgroundColor: Colors.white,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Text(
-                "Click GET WEATHER #$pingPongValue",
-                style: TextStyle(fontSize: 20.0),
+                "Loading",
+                style: kTextSmallStyle,
               ),
-              onPressed: () {
-                _sendTestCall();
-              },
-            ),
-            Text(
-              'You have pushed the button this many times on $_platform',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ),
     );
+  }
+
+  Widget getMainDataContainer() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 20.0),
+          child: Text(
+            '$cityName',
+            style: kTextBigStyle,
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
+                  child: Icon(
+                    Icons.keyboard_arrow_up,
+                    color: Colors.white,
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(8.0, 0.0, 20.0, 0.0),
+                  child: Text(
+                    '${roundValue(weather.tempMax)}*C',
+                    style: kTextSmallStyle,
+                  ),
+                )
+              ],
+            ),
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white,
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(8.0, 0.0, 20.0, 0.0),
+                  child: Text(
+                    '${roundValue(weather.tempMin)}*C',
+                    style: kTextSmallStyle,
+                  ),
+                )
+              ],
+            ),
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.adjust,
+                  color: Colors.white,
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(8.0, 0.0, 20.0, 0.0),
+                  child: Text(
+                    '${weather.pressure}KP',
+                    style: kTextSmallStyle,
+                  ),
+                )
+              ],
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            '${roundValue(weather.temp)}*C',
+            style: kTextBigStyle,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String roundValue(double value) {
+    if (value == null)
+      return '0';
+    else {
+      return value.toStringAsFixed(0);
+    }
   }
 }

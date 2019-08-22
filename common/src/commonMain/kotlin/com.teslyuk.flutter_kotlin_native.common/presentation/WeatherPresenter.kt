@@ -16,7 +16,7 @@ class WeatherPresenter(
     override fun loadWeatherData(cityName: String) {
         GlobalScope.launch(coroutineContext) {
             try {
-                view.hideProgress()
+                view.showProgress()
                 weatherRepository.getWeather(cityName)?.let { weather ->
                     view.hideProgress()
                     view.showWeather(toWeatherUI(cityName, weather))
